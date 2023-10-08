@@ -14,7 +14,6 @@ import io.billie.functional.data.Fixtures.orgRequestJsonNoName
 import io.billie.organisations.viewmodel.Entity
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,25 +23,19 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDO
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 
 
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@ActiveProfiles("test-containers")
 class CanStoreAndReadOrganisationTest {
 
 
@@ -62,12 +55,6 @@ class CanStoreAndReadOrganisationTest {
             postgres.waitingFor(Wait.forLogMessage(".*database system is ready to accept connections*", 2))
         }
 
-        @AfterAll
-        @JvmStatic
-        fun afterAll() {
-            postgres.stop()
-        }
-
         @DynamicPropertySource
         @JvmStatic
         fun configureProperties(registry: DynamicPropertyRegistry) {
@@ -76,9 +63,6 @@ class CanStoreAndReadOrganisationTest {
             registry.add("spring.datasource.password", postgres::getPassword)
         }
     }
-
-    @LocalServerPort
-    private val port = 8080
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -92,75 +76,64 @@ class CanStoreAndReadOrganisationTest {
     @Test
     fun orgs() {
         mockMvc.perform(
-            get("/organisations")
-                .contentType(APPLICATION_JSON)
-        )
-            .andExpect(status().isOk())
+            get("/organisations").contentType(APPLICATION_JSON)
+        ).andExpect(status().isOk())
     }
 
     @Test
     fun cannotStoreOrgWhenNameIsBlank() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonNameBlank())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun cannotStoreOrgWhenNameIsMissing() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonNoName())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun cannotStoreOrgWhenCountryCodeIsMissing() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonNoCountryCode())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun cannotStoreOrgWhenCountryCodeIsBlank() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonCountryCodeBlank())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun cannotStoreOrgWhenCountryCodeIsNotRecognised() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonCountryCodeIncorrect())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun cannotStoreOrgWhenNoLegalEntityType() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonNoLegalEntityType())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun cannotStoreOrgWhenNoContactDetails() {
         mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJsonNoContactDetails())
-        )
-            .andExpect(status().isBadRequest)
+        ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun canStoreOrg() {
         val result = mockMvc.perform(
             post("/organisations").contentType(APPLICATION_JSON).content(orgRequestJson())
-        )
-        .andExpect(status().isOk)
-        .andReturn()
+        ).andExpect(status().isOk).andReturn()
 
         val response = mapper.readValue(result.response.contentAsString, Entity::class.java)
 
@@ -178,8 +151,7 @@ class CanStoreAndReadOrganisationTest {
         }
     }
 
-    private fun queryEntityFromDatabase(sql: String, id: UUID): MutableMap<String, Any> =
-        template.queryForMap(sql, id)
+    private fun queryEntityFromDatabase(sql: String, id: UUID): MutableMap<String, Any> = template.queryForMap(sql, id)
 
     private fun orgFromDatabase(id: UUID): MutableMap<String, Any> =
         queryEntityFromDatabase("select * from organisations_schema.organisations where id = ?", id)
