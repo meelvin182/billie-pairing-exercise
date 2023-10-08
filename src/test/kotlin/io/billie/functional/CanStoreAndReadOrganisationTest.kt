@@ -62,12 +62,6 @@ class CanStoreAndReadOrganisationTest {
             postgres.waitingFor(Wait.forLogMessage(".*database system is ready to accept connections*", 2))
         }
 
-        @AfterAll
-        @JvmStatic
-        fun afterAll() {
-            postgres.stop()
-        }
-
         @DynamicPropertySource
         @JvmStatic
         fun configureProperties(registry: DynamicPropertyRegistry) {
