@@ -1,6 +1,10 @@
 package io.billie.functional.data
 
+import io.billie.invoices.viewmodel.Invoice
+import io.billie.invoices.viewmodel.InvoiceItem
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -147,6 +151,42 @@ object Fixtures {
         return data
     }
 
+    val invoiceItem = InvoiceItem(
+        1,
+        BigDecimal.TEN
+    )
+    val invoice = Invoice(
+        null,
+        UUID.randomUUID().toString(),
+        LocalDate.now(),
+        LocalDate.now().plusDays(1),
+        listOf(invoiceItem)
+    )
+
+    fun createInvoiceRequest(): String = "{\n" +
+            "  \"organisation_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+            "  \"creation_date\": \"08/10/2023\",\n" +
+            "  \"due_date\": \"09/10/2023\",\n" +
+            "  \"items\": [\n" +
+            "    {\n" +
+            "      \"quantity\": 1,\n" +
+            "      \"price_per_item\": 10\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}"
+
+    fun createUpdateInvoiceRequest(): String = "{\n" +
+            "  \"invoice_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+            "  \"organisation_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+            "  \"creation_date\": \"08/10/2023\",\n" +
+            "  \"due_date\": \"09/10/2023\",\n" +
+            "  \"items\": [\n" +
+            "    {\n" +
+            "      \"quantity\": 1,\n" +
+            "      \"price_per_item\": 10\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}"
 
 
 }

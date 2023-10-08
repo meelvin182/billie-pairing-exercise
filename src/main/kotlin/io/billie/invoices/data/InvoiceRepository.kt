@@ -30,6 +30,10 @@ class InvoiceRepository(val jdbcTemplate: JdbcTemplate) {
     @Transactional
     fun deleteInvoiceById(id: UUID) {
         jdbcTemplate.update(
+            "delete from organisations_schema.invoice_items where invoice_id = ?;",
+            id
+        )
+        jdbcTemplate.update(
         "delete from organisations_schema.invoices where id = ?;",
         id
         )
@@ -48,7 +52,7 @@ class InvoiceRepository(val jdbcTemplate: JdbcTemplate) {
                     "INSERT INTO organisations_schema.invoices(organisation_id, creation_date, due_date) VALUES (?, ?, ?);",
                     arrayOf("id")
                 )
-                ps.setObject(1, invoice.organisationId)
+                ps.setObject(1, UUID.fromString(invoice.organisationId))
                 ps.setDate(2, Date.valueOf(invoice.creationDate))
                 ps.setDate(3, Date.valueOf(invoice.dueDate))
                 ps
@@ -67,7 +71,7 @@ class InvoiceRepository(val jdbcTemplate: JdbcTemplate) {
             val keyHolder: KeyHolder = GeneratedKeyHolder()
             jdbcTemplate.update ({ connection ->
                 val ps = connection.prepareStatement(
-                    "INSERT INTO organisations_schema.invoice_items (invoice_id quantity, price_per_item) VALUES (?, ?, ?) ;".trim(),
+                    "INSERT INTO organisations_schema.invoice_items (invoice_id, quantity, price_per_item) VALUES (?, ?, ?) ;".trim(),
                     arrayOf("id")
                 )
                 ps.setObject(1, invoice_id)
@@ -82,40 +86,31 @@ class InvoiceRepository(val jdbcTemplate: JdbcTemplate) {
     private fun findAll(): Collection<Invoice> = jdbcTemplate.query(
         "SELECT id, organisation_id, creation_date, due_date FROM organisations_schema.invoices;".trim(),
         invoiceMapper()
-    ).filterNotNull().apply { fulfilInvoicesWithItem(this) }
+    ).filterNotNull().map { invoice ->
+        return@map invoice.copy(invoiceItems = findInvoiceItemsByInvoiceId(invoice.invoiceId!!)) }
 
-
-    private fun fulfilInvoicesWithItem(invoices: Collection<Invoice>): Collection<Invoice> {
-        return invoices.map { invoice ->
-            invoice.copy(invoiceItems = findInvoiceItemsByInvoiceId(invoice.invoiceId!!))
-        }
-    }
 
     private fun findInvoicesById(id: UUID): Invoice = jdbcTemplate.query(
         "SELECT id, organisation_id, creation_date, due_date FROM organisations_schema.invoices WHERE id = ?".trim(),
         invoiceMapper(),
         id
     ).filterNotNull().map { invoice ->
-        invoice.copy(invoiceItems = findInvoiceItemsByInvoiceId(invoice.invoiceId!!))
+        return@map invoice.copy(invoiceItems = findInvoiceItemsByInvoiceId(invoice.invoiceId!!))
     }.first()
 
 
     private fun findInvoiceItemsByInvoiceId(invoiceId: UUID) = jdbcTemplate.query(
-        "SELECT id, invoice_id, quantity, price_per_item FROM organisations_schema.invoice_items WHERE id = ?",
+        "SELECT quantity, price_per_item FROM organisations_schema.invoice_items WHERE invoice_id = ?",
         invoiceItemMapper(),
         invoiceId
     ).filterNotNull()
 
     private fun invoiceItemMapper(): RowMapper<InvoiceItem> {
         return RowMapper<InvoiceItem> { it: ResultSet, _: Int ->
-            val invoiceItemId = it.getString(1)
-            val invoiceId = it.getString(2)
-            val quantity = it.getInt(3)
-            val price = it.getBigDecimal(4)
+            val quantity = it.getInt(1)
+            val price = it.getBigDecimal(2)
 
             return@RowMapper InvoiceItem(
-                UUID.fromString(invoiceItemId),
-                UUID.fromString(invoiceId),
                 quantity,
                 price
             )
@@ -132,7 +127,7 @@ class InvoiceRepository(val jdbcTemplate: JdbcTemplate) {
 
         // Even kotlin automatically returns the last statement, I like to be explicit
         return@RowMapper Invoice(
-            UUID.fromString(id), UUID.fromString(organisationId), creationDate, dueDate, emptyList()
+            UUID.fromString(id), organisationId, creationDate, dueDate, emptyList()
         )
     }
 

@@ -43,5 +43,5 @@ services:
       - service.env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.organisations.rule=PathPrefix(`/swagger-ui`) || PathPrefix(`/v3`) || PathPrefix(`/organisations`) || PathPrefix(`/countries`)"
+      - "traefik.http.routers.organisations.rule=PathPrefix(`/swagger-ui`) || PathPrefix(`/v3`) || PathPrefix(`/invoices`) || PathPrefix(`/organisations`) || PathPrefix(`/countries`)"
       - "traefik.http.services.organisations.loadbalancer.server.port=80"

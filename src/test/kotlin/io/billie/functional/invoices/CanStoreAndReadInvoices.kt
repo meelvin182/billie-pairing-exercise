@@ -1,23 +1,16 @@
 package io.billie.functional.invoices
 
+import io.billie.functional.data.Fixtures
 import io.billie.invoices.data.InvoiceRepository
-import io.billie.invoices.viewmodel.Invoice
-import io.billie.invoices.viewmodel.InvoiceItem
-import junit.framework.TestCase.assertEquals
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.Wait
-import java.math.BigDecimal
-import java.time.LocalDate
-import java.util.*
 
 @SpringBootTest
 class CanStoreAndReadInvoices {
@@ -32,7 +25,7 @@ class CanStoreAndReadInvoices {
         ).apply {
             withDatabaseName("organisations")
             withReuse(true)
-           // withInitScript("db/init.sql")
+            // withInitScript("db/init.sql")
         }
 
         @BeforeAll
@@ -50,25 +43,28 @@ class CanStoreAndReadInvoices {
             registry.add("spring.datasource.username", postgres::getUsername)
             registry.add("spring.datasource.password", postgres::getPassword)
         }
-
     }
 
+    @Test
+    fun canCreateInvoice() {
+        val cntBefore = invoiceRepository.findAllInvoices().size
+        invoiceRepository.createInvoice(Fixtures.invoice)
+        val invoices = invoiceRepository.findAllInvoices()
+        Assertions.assertEquals(cntBefore + 1, invoices.size)
+        Assertions.assertEquals(1, invoices.first().invoiceItems.size)
+    }
 
     @Test
-    fun canCreateAnEmptyInvoice(){
-        val invoice = Invoice(
-            null,
-            UUID.randomUUID(),
-            LocalDate.now(),
-            LocalDate.now().plusDays(1),
-            emptyList()
-        )
-        invoiceRepository.createInvoice(invoice)
-        val invoices = invoiceRepository.findAllInvoices()
-        Assertions.assertEquals(1, invoices.size)
-        invoiceRepository.deleteInvoiceById(invoices.first().invoiceId!!)
-        Assertions.assertEquals(0, invoiceRepository.findAllInvoices().size)
-
+    fun canDeleteInvoice() {
+        var allInvoices = invoiceRepository.findAllInvoices()
+        if (allInvoices.isEmpty()) {
+            invoiceRepository.createInvoice(Fixtures.invoice)
+            allInvoices = invoiceRepository.findAllInvoices()
+        }
+        val cntBefore = allInvoices.size
+        invoiceRepository.deleteInvoiceById(allInvoices.first().invoiceId!!)
+        allInvoices = invoiceRepository.findAllInvoices()
+        Assertions.assertEquals(cntBefore - 1, allInvoices.size)
     }
 
 
