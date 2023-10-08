@@ -20,7 +20,7 @@ jobs:
         distribution: 'adopt'
 
     - name: Build with Gradle
-      run: ./gradlew clean test
+      run: ./gradlew clean test --no-daemon
 
     - name: Archive test results
       uses: actions/upload-artifact@v2
